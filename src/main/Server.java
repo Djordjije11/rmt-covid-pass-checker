@@ -3,11 +3,11 @@ package main;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.LinkedList;
+//import java.util.LinkedList;
 
 public class Server {
 
-	public static LinkedList<ClientHandler> onlineUsers = new LinkedList<>();
+	//public static LinkedList<ClientHandler> onlineUsers = new LinkedList<>();
 	
 	
 	public static void main(String[] args) {
