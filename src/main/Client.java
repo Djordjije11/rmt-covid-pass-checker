@@ -59,7 +59,6 @@ public class Client implements Runnable {
 		while(true) {
 			
 			try {
-				
 				message = console.readLine();
 				serverOutput.println(message);
 				
@@ -68,23 +67,11 @@ public class Client implements Runnable {
 				}
 				
 			} catch (IOException e) {
-				
-				
 				System.out.println("Greska nastala prilikom koriscenja konzole.");
-				
-				
-				
 			}
-			
-			
-			
+	
 		}
-		
-		
 		
 	}
 	
-	
-	
-
 }
