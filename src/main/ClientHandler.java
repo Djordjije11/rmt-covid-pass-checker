@@ -1,9 +1,12 @@
 package main;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -59,7 +62,7 @@ public class ClientHandler extends Thread {
 	public boolean isVaccined(int i) throws IOException {
 		String response;
 		while(true) {
-			clientOutput.println(">>> Da li ste primili " + i + ". vakcinu? (da/ne)");
+			clientOutput.println(">>> Da li ste primili " + i + ". dozu vakcine? (da/ne)");
 			response = clientInput.readLine();
 			if(response.toLowerCase().equals("da")) {
 				
@@ -81,6 +84,9 @@ public class ClientHandler extends Thread {
 						case "4":
 							vaccine1 = "Oksford/AstraZeneka";
 							break;
+						case "***quit":
+							isQuit = true;
+							return false;
 						default:
 							clientOutput.println("Niste ispravno uneli odgovarajuci broj.");
 							continue;
@@ -118,6 +124,9 @@ public class ClientHandler extends Thread {
 							}
 							vaccine2 = "Oksford/AstraZeneka";
 							break;
+						case "***quit":
+							isQuit = true;
+							return false;
 						default:
 							clientOutput.println("Niste ispravno uneli odgovarajuci broj.");
 							continue;
@@ -139,6 +148,9 @@ public class ClientHandler extends Thread {
 						case "4":
 							vaccine3 = "Oksford/AstraZeneka";
 							break;
+						case "***quit":
+							isQuit = true;
+							return false;
 						default:
 							clientOutput.println("Niste ispravno uneli odgovarajuci broj.");
 							continue;
@@ -294,6 +306,9 @@ public class ClientHandler extends Thread {
 			
 			for(int i = 1; i <= 3; i++) {
 				if(isVaccined(i)==false) {
+					if(isQuit == true) {
+						return false;
+					}
 					break;
 				}
 			}
@@ -353,11 +368,311 @@ public class ClientHandler extends Thread {
 					break;
 				} else if(response.equals("1")) {
 					//LOGIN
-					//clientOutput.println(">>> Unesite korisnicko ime: ");
+					clientOutput.println(">>> Unesite korisnicko ime: ");
+					username = clientInput.readLine();
+					if(username.equals("***quit")) {
+						isQuit = true;
+						break;
+					}
+					clientOutput.println(">>> Unesite sifru: ");
+					password = clientInput.readLine();
+					if(password.equals("***quit")) {
+						isQuit = true;
+						break;
+					}
+					//ZA ADMINA DEO
+					if(username.equals("admin") && password.equals("admin")) {
+						
+						while(true) {
+							clientOutput.println(">>>ADMIN<<< >>> Ukoliko budete zeleli da se odjavite, upisite ***logout. Ukoliko budete zeleli da prekinete sesiju, upisite ***quit"
+									+ "\n>>> Ukucajte odgovarajuci broj kako biste odabrali opciju koju zelite:\n1.Pogledati da li odredjeni korisnik poseduju validnu kovid propusnicu"
+									+ "\n2.Pogledati listu svih korisnika i njihove statuse vakcinacije"
+									+ "\n3.Pogledati ukupan broj korisnika vakcinisianih samo prvom dozom, sa ukupno dve doze ili sa tri doze"
+									+ "\n4.Pogledati za svaku vakcinu koliko ju je korisnika primilo (ne racunajuci trecu dozu)");
+							response = clientInput.readLine();
+							if(response.equals("***quit")) {
+								isQuit = true;
+								break;
+							} else if(response.equals("***logout")) {
+								break;
+							} else if(response.equals("1")) {
+								clientOutput.println(">>> Upisite JMBG trazenog korisnika: ");
+								jmbg = clientInput.readLine();
+								if(jmbg.equals("***quit")) {
+									isQuit = true;
+									break;
+								}
+								if(jmbg.equals("***logout")) {
+									response = "***logout";
+									break;
+								}
+								statement = connect.createStatement();
+								resultSet = statement.executeQuery("SELECT vaccine2 FROM `rmt-domaci2`.appuser WHERE jmbg='"  + jmbg + "'");
+								if(resultSet.next()) {
+									vaccine2 = resultSet.getString("vaccine2");	 
+									} else {
+										clientOutput.println("Greska! Korisnik nije u bazi.");
+										continue;
+									}
+								if(vaccine2 == null) {
+									clientOutput.println(">>> Trazeni korisnik nema validnu kovid propusnicu.");
+								} else {
+									clientOutput.println(">>> Trazeni korisnik ima validnu kovid propusnicu.");
+								}
+								continue;	
+							} else if(response.equals("2")) {
+								int broj_primljenih_vakcina;
+								clientOutput.println(">>> Lista svih korisnika i njihov status vakcinacije:");
+								statement = connect.createStatement();
+								resultSet = statement.executeQuery("SELECT username,\r\n"
+										+ "case when vaccine1 is not null then 1 else 0 end +\r\n"
+										+ "case when vaccine2 is not null then 1 else 0 end +\r\n"
+										+ "case when vaccine3 is not null then 1 else 0 end\r\n"
+										+ "as broj_primljenih_vakcina\r\n"
+										+ "FROM `rmt-domaci2`.appuser;");
+								while(resultSet.next()) {
+									username = resultSet.getString("username");
+									broj_primljenih_vakcina = resultSet.getInt("broj_primljenih_vakcina");
+									clientOutput.println(username + ": " + broj_primljenih_vakcina + " primljenih doza vakcine");
+								}
+								continue;
+							} else if(response.equals("3")) {
+								int brojVakcinisanih1, brojVakcinisanih2, brojVakcinisanih3;
+								statement = connect.createStatement();
+								resultSet = statement.executeQuery("SELECT count(*) as brojVakcinisanih1 FROM `rmt-domaci2`.appuser WHERE vaccine1 is not null AND vaccine2 is null;");
+								if(resultSet.next()){
+									brojVakcinisanih1 = resultSet.getInt("brojVakcinisanih1");
+								} else {
+									clientOutput.println("Greska! Korisnik nije u bazi.");
+									continue;
+								}
+								statement = connect.createStatement();
+								resultSet = statement.executeQuery("SELECT count(*) as brojVakcinisanih2 FROM `rmt-domaci2`.appuser WHERE vaccine2 is not null AND vaccine3 is null;");
+								if(resultSet.next()){
+									brojVakcinisanih2 = resultSet.getInt("brojVakcinisanih2");
+								} else {
+									clientOutput.println("Greska! Korisnik nije u bazi.");
+									continue;
+								}
+								statement = connect.createStatement();
+								resultSet = statement.executeQuery("SELECT count(*) as brojVakcinisanih3 FROM `rmt-domaci2`.appuser WHERE vaccine3 is not null;");
+								if(resultSet.next()){
+									brojVakcinisanih3 = resultSet.getInt("brojVakcinisanih3");
+								} else {
+									clientOutput.println("Greska! Korisnik nije u bazi.");
+									continue;
+								}
+								clientOutput.println(">>>\nBroj korisnika vakcinisanih jednom dozom: " + brojVakcinisanih1 + 
+										"\nBroj korisnika vakcinisanih sa dve doze: " + brojVakcinisanih2 + "\nBroj korisnika vakcinisanih sa tri doze: " + brojVakcinisanih3);
+								continue;
+							} else if(response.equals("4")) {
+								clientOutput.println(">>>");
+								int brojVakcinisanih;
+								statement = connect.createStatement();
+								resultSet = statement.executeQuery("SELECT vaccine2, count(*) as brojVakcinisanih FROM appuser WHERE vaccine2 = \"Fajzer\";");
+								if(resultSet.next()) {
+									brojVakcinisanih = resultSet.getInt("brojVakcinisanih");
+									clientOutput.println("Fajzer: " + brojVakcinisanih);
+								} else {
+									clientOutput.println("Greska! Korisnik nije u bazi.");
+									continue;
+								}
+								statement = connect.createStatement();
+								resultSet = statement.executeQuery("SELECT vaccine2, count(*) as brojVakcinisanih FROM appuser WHERE vaccine2 = \"Oksford/AstraZeneka\";");
+								if(resultSet.next()) {
+									brojVakcinisanih = resultSet.getInt("brojVakcinisanih");
+									clientOutput.println("Oksford/AstraZeneka: " + brojVakcinisanih);
+								} else {
+									clientOutput.println("Greska! Korisnik nije u bazi.");
+									continue;
+								}
+								statement = connect.createStatement();
+								resultSet = statement.executeQuery("SELECT vaccine2, count(*) as brojVakcinisanih FROM appuser WHERE vaccine2 = \"Sinofarm\";");
+								if(resultSet.next()) {
+									brojVakcinisanih = resultSet.getInt("brojVakcinisanih");
+									clientOutput.println("Sinofarm: " + brojVakcinisanih);
+								} else {
+									clientOutput.println("Greska! Korisnik nije u bazi.");
+									continue;
+								}
+								statement = connect.createStatement();
+								resultSet = statement.executeQuery("SELECT vaccine2, count(*) as brojVakcinisanih FROM appuser WHERE vaccine2 = \"Sputnjik\";");
+								if(resultSet.next()) {
+									brojVakcinisanih = resultSet.getInt("brojVakcinisanih");
+									clientOutput.println("Sputnjik: " + brojVakcinisanih);
+								} else {
+									clientOutput.println("Greska! Korisnik nije u bazi.");
+									continue;
+								}
+								continue;
+							} else {
+								clientOutput.println("Niste ispravno ukucali odgovarajuci broj. Odabrana opcija ne postoji.");
+								continue;
+							}
+						}
+						if(isQuit == true) {
+							break;
+						}
+						if(response.equals("***logout")) {
+							continue;
+						}
+						continue;
+					}
 					
-					//clientOutput.println(">>> Unesite sifru: ");
+					statement = connect.createStatement();
+					resultSet = statement.executeQuery("SELECT EXISTS(SELECT * FROM `rmt-domaci2`.appuser WHERE username='"  + username + "' AND password='" + password + "')");
+					if(resultSet.next()) {
+						if(resultSet.getInt(1) == 0) {
+							username = null;
+							clientOutput.println(">>> Niste uspesno uneli trazene parametre. Korisnik nije registrovan.");
+							continue;	
+						}
+					}
+					response = null;
+					while(true) {
+						clientOutput.println(">>> Ukoliko budete zeleli da se odjavite, upisite ***logout. Ukoliko budete zeleli da prekinete sesiju, upisite ***quit");
+						clientOutput.println(">>> Ukucajte broj (1 ili 2) za odgovarajucu opciju. Da li zelite da:\n1.Izmenite podatke o primljenim vakcinama\n2.Proverite da li posedujete validnu kovid propusnicu");
+						response = clientInput.readLine();
+						if(response.equals("***logout")) {
+							break;
+						} else if(response.equals("***quit")) {
+							break;
+						} else if(response.equals("1")) {
+							//IZMENA PODATAKA O PRIMLJENIM VAKCINAMA
+							statement = connect.createStatement();
+							resultSet = statement.executeQuery("SELECT vaccine1, vaccine2, vaccine3 FROM `rmt-domaci2`.appuser WHERE username='"  + username + "'");
+							if(resultSet.next()) {
+								vaccine1 = resultSet.getString("vaccine1");
+								vaccine2 = resultSet.getString("vaccine2");
+								vaccine3 = resultSet.getString("vaccine3");		 
+								} else {
+									clientOutput.println("Greska! Korisnik nije u bazi.");
+									break;
+								}
+
+							if(vaccine1 == null) {
+								for(int i = 1; i <= 3; i++) {
+									if(isVaccined(i)==false) {
+										break;
+									}
+								}
+							} else if(vaccine2 == null) {
+								for(int i = 2; i <= 3; i++) {
+									if(isVaccined(i)==false) {
+										break;
+									}
+								}
+							} else if(vaccine3 == null) {
+								isVaccined(3);
+							} else {
+								clientOutput.println(">>> Vec ste primili sve doze vakcina koje su dostupne.");
+								continue;
+							}
+							
+							if(isQuit == true) {
+								break;
+							}
+							
+							if(vaccine1 == null) {
+								continue;
+							} else if(vaccine2 == null) {
+								statement = connect.createStatement();
+								statement.executeUpdate("UPDATE `rmt-domaci2`.appuser SET vaccine1='" + vaccine1 + "' WHERE username='" + username + "'");
+							} else if(vaccine3 == null) {
+								statement = connect.createStatement();
+								statement.executeUpdate("UPDATE `rmt-domaci2`.appuser SET vaccine1='" + vaccine1 + "', vaccine2='" + vaccine2 + "' WHERE username='" + username + "'");
+							} else {
+								statement = connect.createStatement();
+								statement.executeUpdate("UPDATE `rmt-domaci2`.appuser SET vaccine1='" + vaccine1 + "', vaccine2='" + vaccine2 + "', vaccine3='" + vaccine3 + "' WHERE username='" + username + "'");
+							}
+							continue;
+						} else if(response.equals("2")) {
+							//PROVERA ZA PROPUSNICU
+							statement = connect.createStatement();
+							resultSet = statement.executeQuery("SELECT vaccine2 FROM `rmt-domaci2`.appuser WHERE username='"  + username + "'");
+							if(resultSet.next()) {
+								vaccine2 = resultSet.getString("vaccine2");	 
+								} else {
+									clientOutput.println("Greska! Korisnik nije u bazi.");
+									break;
+								}
+							if(vaccine2 != null) {
+								while(true) {
+									clientOutput.println(">>> Posedujete validnu kovid propusnicu.\nDa li zelite da je generisete? (da/ne)");
+									response = clientInput.readLine();
+									if(response.equals("***quit")) {
+										isQuit = true;
+										break;
+									}
+									if(response.equals("***logout")) {
+										break;
+									}
+									if(response.toLowerCase().equals("da")) {
+										//GENERISANJE KOVID PROPUSNICE
+										statement = connect.createStatement();
+										resultSet = statement.executeQuery("SELECT name, surname, jmbg, vaccine3 FROM `rmt-domaci2`.appuser WHERE username='"  + username + "'");
+										if(resultSet.next()) {
+											name = resultSet.getString("name");
+											surname = resultSet.getString("surname");
+											jmbg = resultSet.getString("jmbg");
+											vaccine3 = resultSet.getString("vaccine3");		 
+											} else {
+												clientOutput.println("Greska! Korisnik nije u bazi.");
+												break;
+											}
+										if(vaccine3 == null) {
+											try(FileWriter fileWriter = new FileWriter(username + "_kovid_propusnica.txt");
+													BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+													PrintWriter printWriter = new PrintWriter(bufferedWriter)) {
+														printWriter.println("KOVID PROPUSNICA\n" + name + " " + surname + " (JMBG: " + jmbg + ")\nvakcinisan/a je sa dve doze " + vaccine2 + " vakcine.");
+														clientOutput.println(">>> Kovid propusnica je uspesno generisana.");
+														break;
+											} catch(Exception e) {
+												System.out.println("Greska prilikom generisanja kovid propusnice.");
+												clientOutput.println("Greska prilikom generisanja kovid propusnice.");
+												continue;
+											}
+										} else {
+											try(FileWriter fileWriter = new FileWriter(username + "_kovid_propusnica.txt");
+													BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+													PrintWriter printWriter = new PrintWriter(bufferedWriter)) {
+														printWriter.println("KOVID PROPUSNICA\n" + name + " " + surname + " (JMBG: " + jmbg + ")\nvakcinisan/a je sa dve doze " 
+													+ vaccine2 + " vakcine i jednom dozom (booster) " + vaccine3 + " vakcine.");
+														clientOutput.println(">>> Kovid propusnica je uspesno generisana.");
+														break;
+											} catch(Exception e) {
+												System.out.println("Greska prilikom generisanja kovid propusnice.");
+												clientOutput.println("Greska prilikom generisanja kovid propusnice.");
+												continue;
+											}
+										}
+									} else if(response.toLowerCase().equals("ne")) {
+										break;
+									} else {
+										clientOutput.println("Niste ispravno ukucali odgovarajuci broj. Odabrana opcija ne postoji.");
+										continue;
+									}
+								}
+							} else {
+								clientOutput.println(">>> Ne posedujete validnu kovid propusnicu.");
+								continue;
+							}
+							if(isQuit == true || response.equals("***quit") || response.equals("***logout")) {
+								break;
+							}
+							continue;
+						} else {
+							clientOutput.println("Niste ukucali ispravno. Ne postoji opcija za uneti broj.");
+							continue;
+						}
+					}
 					
-					
+					if(response.equals("***logout")) {
+						continue;
+					}
+					if(response.equals("***quit") || isQuit == true) {
+						break;
+					}
 					
 				} else if(response.equals("2")){
 					//REGISTRACIJA
@@ -372,9 +687,7 @@ public class ClientHandler extends Thread {
 					clientOutput.println(">>> Niste uneli ispravno.");
 					continue;
 					}
-				
 			}
-				
 			
 			clientOutput.println(">>> Dovidjenja.");
 			
@@ -385,19 +698,22 @@ public class ClientHandler extends Thread {
 			}			
 			socketCommunication.close();		// zatvaram konekciju servera sa klijentom
 			
-			
 		} catch (IOException e) {
-			
 			clientOutput.println("Greska prilikom konekcija servera i klijenta.");
 			System.out.println("Greska prilikom konekcija servera i klijenta.");
 			//Server.onlineUsers.remove(this);
-			
 		} catch (SQLException e) {
 			clientOutput.println("Greska prilikom konekcije sa bazom podataka.");
 			System.out.println("Greska prilikom konekcije sa bazom podataka.");
+			clientOutput.println(">>> Dovidjenja.");
+			try {
+				socketCommunication.close();																										// OVO SI ISPRAVLJAO
+			} catch (IOException e1) {
+				clientOutput.println("Greska prilikom konekcija servera i klijenta.");
+				System.out.println("Greska prilikom konekcija servera i klijenta.");
+			}	
 		}
 		
 	}
-	
 	
 }
