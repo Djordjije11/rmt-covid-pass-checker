@@ -30,14 +30,12 @@ public class Client implements Runnable {
 			String input;
 			
 			while(true) {
-				
 				input = serverInput.readLine();
 				System.out.println(input);
 						
 				if(input.equals(">>> Dovidjenja.")) {
 					break;
 				}
-				
 			}
 			
 			socketCommunication.close();
@@ -47,17 +45,12 @@ public class Client implements Runnable {
 		} catch (IOException e) {
 			System.out.println("SERVER JE PAO!");
 		}
-		
-
 	}
 	
 	@Override
 	public void run() {
-		
 		String message;
-		
 		while(true) {
-			
 			try {
 				message = console.readLine();
 				serverOutput.println(message);
@@ -65,13 +58,10 @@ public class Client implements Runnable {
 				if(message.equals("***quit")) {
 					break;
 				}
-				
 			} catch (IOException e) {
 				System.out.println("Greska nastala prilikom koriscenja konzole.");
 			}
-	
 		}
-		
 	}
 	
 }
