@@ -21,7 +21,7 @@ public class Client implements Runnable {
 		
 		try {
 			
-			socketCommunication = new Socket("localhost", 9001);	// SETI SE OVO ZA LOCALHOST DA VIDIS DA IZMENIS DA RADI I ZA DRUGE RACUNARE
+			socketCommunication = new Socket("localhost", 9001);
 			
 			serverInput = new BufferedReader(new InputStreamReader(socketCommunication.getInputStream()));
 			serverOutput = new PrintStream(socketCommunication.getOutputStream());
@@ -60,7 +60,7 @@ public class Client implements Runnable {
 							PrintWriter printWriter = new PrintWriter(bufferedWriter)) {
 						
 						printWriter.print(propusnica);
-						System.out.println(">>> Kovid propusnica je uspesno generisana");
+						System.out.println(">>> Kovid propusnica je uspesno generisana.");
 						
 					} catch(Exception e) {
 						System.out.println("Greska prilikom generisanja kovid propusnice.");
