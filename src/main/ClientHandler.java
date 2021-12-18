@@ -183,7 +183,7 @@ public class ClientHandler extends Thread {
 							continue;
 						}
 						while(true) {
-							clientOutput.println(">>> Unesite datum kada ste primili vakcinu (u formatu: dd.MM.yyyy. kao npr. 01.04.2021.");
+							clientOutput.println(">>> Unesite datum kada ste primili vakcinu (u formatu: dd.MM.yyyy. kao npr. 01.04.2021.)");
 							vaccine1_date = clientInput.readLine();
 							if(vaccine1_date.equals("***quit")) {
 								isQuit = true;
@@ -235,7 +235,7 @@ public class ClientHandler extends Thread {
 							continue;
 						}
 						while(true) {
-							clientOutput.println(">>> Unesite datum kada ste primili vakcinu (u formatu: dd.MM.yyyy. kao npr. 01.04.2021.");
+							clientOutput.println(">>> Unesite datum kada ste primili vakcinu (u formatu: dd.MM.yyyy. kao npr. 01.04.2021.)");
 							vaccine2_date = clientInput.readLine();
 							if(vaccine2_date.equals("***quit")) {
 								isQuit = true;
@@ -271,7 +271,7 @@ public class ClientHandler extends Thread {
 							continue;
 						}
 						while(true) {
-							clientOutput.println(">>> Unesite datum kada ste primili vakcinu (u formatu: dd.MM.yyyy. kao npr. 01.04.2021.");
+							clientOutput.println(">>> Unesite datum kada ste primili vakcinu (u formatu: dd.MM.yyyy. kao npr. 01.04.2021.)");
 							vaccine3_date = clientInput.readLine();
 							if(vaccine3_date.equals("***quit")) {
 								isQuit = true;
@@ -752,41 +752,36 @@ public class ClientHandler extends Thread {
 									if(response.toLowerCase().equals("da")) {
 										//GENERISANJE KOVID PROPUSNICE
 										statement = connect.createStatement();
-										resultSet = statement.executeQuery("SELECT name, surname, jmbg, vaccine3 FROM `rmt-domaci2`.appuser WHERE binary username='"  + username + "'");
+										resultSet = statement.executeQuery("SELECT name, surname, jmbg, vaccine1, vaccine2, vaccine3, vaccine1_date, vaccine2_date, vaccine3_date"
+												+ " FROM `rmt-domaci2`.appuser WHERE binary username='"  + username + "'");
 										if(resultSet.next()) {
 											name = resultSet.getString("name");
 											surname = resultSet.getString("surname");
 											jmbg = resultSet.getString("jmbg");
-											vaccine3 = resultSet.getString("vaccine3");		 
+											vaccine1 = resultSet.getString("vaccine1");
+											vaccine2 = resultSet.getString("vaccine2");
+											vaccine3 = resultSet.getString("vaccine3");
+											vaccine1_date = resultSet.getString("vaccine1_date");
+											vaccine2_date = resultSet.getString("vaccine2_date");
+											vaccine3_date = resultSet.getString("vaccine3_date");
 											} else {
 												clientOutput.println("Greska! Korisnik nije u bazi.");
 												break;
 											}
 										if(vaccine3 == null) {
-											try(FileWriter fileWriter = new FileWriter(username + "_kovid_propusnica.txt");
-													BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-													PrintWriter printWriter = new PrintWriter(bufferedWriter)) {
-														printWriter.println("KOVID PROPUSNICA\n" + name + " " + surname + " (JMBG: " + jmbg + ")\nvakcinisan/a je sa dve doze " + vaccine2 + " vakcine.");
-														clientOutput.println(">>> Kovid propusnica je uspesno generisana.");
-														break;
-											} catch(Exception e) {
-												System.out.println("Greska prilikom generisanja kovid propusnice.");
-												clientOutput.println("Greska prilikom generisanja kovid propusnice.");
-												continue;
-											}
+											String propusnica = "KOVID PROPUSNICA\n" + name + " " + surname + " (JMBG: " + jmbg + ")\nPrva primljena doza vakcine: " + vaccine1 + ", " + vaccine1_date + "\n"
+													+ "Druga primljena doza vakcine: " + vaccine2 + ", " + vaccine2_date;
+											clientOutput.println(">>> Zahtev za generisanjem kovid propusnice je prihvacen.");
+											clientOutput.println(propusnica + "$");
+											
+											break;
 										} else {
-											try(FileWriter fileWriter = new FileWriter(username + "_kovid_propusnica.txt");
-													BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-													PrintWriter printWriter = new PrintWriter(bufferedWriter)) {
-														printWriter.println("KOVID PROPUSNICA\n" + name + " " + surname + " (JMBG: " + jmbg + ")\nvakcinisan/a je sa dve doze " 
-													+ vaccine2 + " vakcine i jednom dozom (booster) " + vaccine3 + " vakcine.");
-														clientOutput.println(">>> Kovid propusnica je uspesno generisana.");
-														break;
-											} catch(Exception e) {
-												System.out.println("Greska prilikom generisanja kovid propusnice.");
-												clientOutput.println("Greska prilikom generisanja kovid propusnice.");
-												continue;
-											}
+											String propusnica = "KOVID PROPUSNICA\n" + name + " " + surname + " (JMBG: " + jmbg + ")\nPrva primljena doza vakcine: " + vaccine1 + ", " + vaccine1_date + "\n"
+													+ "Druga primljena doza vakcine: " + vaccine2 + ", " + vaccine2_date + "\nTreca primljena doza vakcine: " + vaccine3 + ", " + vaccine3_date;
+											clientOutput.println(">>> Zahtev za generisanjem kovid propusnice je prihvacen.");
+											clientOutput.println(propusnica + "$");
+											
+											break;
 										}
 									} else if(response.toLowerCase().equals("ne")) {
 										break;

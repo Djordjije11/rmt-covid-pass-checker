@@ -1,9 +1,12 @@
 package main;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -36,6 +39,35 @@ public class Client implements Runnable {
 				if(input.equals(">>> Dovidjenja.")) {
 					break;
 				}
+				
+				if(input.equals(">>> Zahtev za generisanjem kovid propusnice je prihvacen.")) {
+					String propusnica = "";
+					while(true) {
+						input = serverInput.readLine();
+						if(propusnica.equals("")) {
+							propusnica = propusnica + input;
+						} else {
+							propusnica = propusnica + "\n" + input;
+						}
+						if(input.endsWith("$")) {
+							propusnica = propusnica.substring(0, propusnica.length() - 1);
+							break;
+						}
+					}
+					
+					try(FileWriter fileWriter = new FileWriter("kovid_propusnica.txt");
+							BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+							PrintWriter printWriter = new PrintWriter(bufferedWriter)) {
+						
+						printWriter.print(propusnica);
+						System.out.println(">>> Kovid propusnica je uspesno generisana");
+						
+					} catch(Exception e) {
+						System.out.println("Greska prilikom generisanja kovid propusnice.");
+					}
+					
+				}
+				
 			}
 			
 			socketCommunication.close();
