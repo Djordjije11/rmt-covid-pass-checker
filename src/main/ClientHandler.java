@@ -301,6 +301,8 @@ public class ClientHandler extends Thread {
 	public boolean registerClient() {
 		
 		try {
+			username = null; password = null; name = null; surname = null; jmbg = null; gender = null; email = null;
+			vaccine1 = null; vaccine1_date = null; vaccine2 = null; vaccine2_date = null; vaccine3 = null; vaccine3_date = null;
 			
 			while(true) {
 				clientOutput.println(">>> Unesite korisnicko ime: ");
@@ -819,6 +821,8 @@ public class ClientHandler extends Thread {
 						}
 						if(isRegistered == false) {
 							break;
+						} else {
+							clientOutput.println(">>> Registracija je uspesno izvrsena.");
 						}
 				} else {
 					clientOutput.println(">>> Niste uneli ispravno.");
